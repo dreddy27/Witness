@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Witness</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Old+Standard+TT:ital,wght@0,400;1,400&family=Italiana&family=Courier+Prime:ital@0;1&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#080807;--ink:#e8e0cc;--ink-mid:#9c9282;--ink-dim:#3d3830;--ink-ghost:#1e1c18}
+html,body{width:100%;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;cursor:none;font-family:'Cormorant Garamond',serif;position:relative}
+
+body::after{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E"),radial-gradient(ellipse at 15% 30%,rgba(180,150,110,0.06),transparent 40%),radial-gradient(ellipse at 85% 70%,rgba(100,120,150,0.05),transparent 40%),radial-gradient(ellipse at center,transparent 60%,rgba(8,8,7,0.5) 100%);opacity:1;mix-blend-mode:normal;pointer-events:none;z-index:3}
+
+#stage,#journal,#waiting,#counter,#pulse{z-index:5}
+#ghost{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;filter:blur(20px) saturate(0.15) brightness(0.6) contrast(2.4);opacity:0.85;z-index:1;pointer-events:none;mix-blend-mode:screen;transform:scale(1.15);animation:breathe 11s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:scale(1.15);opacity:0.7}50%{transform:scale(1.19);opacity:0.78}}
+#ghost.developing{animation:breathe 11s ease-in-out infinite,develop 3s ease-out}
+@keyframes develop{0%{filter:blur(20px) saturate(0.15) brightness(0.6) contrast(2.4)}30%{filter:blur(10px) saturate(0.2) brightness(0.85) contrast(2.8)}100%{filter:blur(20px) saturate(0.15) brightness(0.6) contrast(2.4)}}
+#scan{position:fixed;left:0;right:0;height:140px;background:linear-gradient(to bottom,transparent,rgba(200,180,150,0.04) 40%,rgba(200,180,150,0.06) 50%,rgba(200,180,150,0.04) 60%,transparent);z-index:2;pointer-events:none;animation:scan 14s linear infinite}
+@keyframes scan{0%{top:-20%}100%{top:120%}}
+#hatch{position:fixed;inset:0;background-image:repeating-linear-gradient(45deg,transparent 0,transparent 2px,rgba(189,181,163,0.015) 2px,rgba(189,181,163,0.015) 3px);z-index:2;pointer-events:none}
+#camera{position:fixed;top:-9999px;left:-9999px;width:320px;height:240px}
+#canvas,#prev{display:none}
+#stage{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;overflow:hidden}
+#stage::before{content:'';position:absolute;left:0;right:0;top:0;height:300px;background:linear-gradient(to bottom,var(--bg) 60%,transparent);z-index:10;pointer-events:none}
+#stage::after{content:'';position:absolute;left:0;right:0;bottom:0;height:120px;background:linear-gradient(to top,var(--bg) 30%,transparent);z-index:10;pointer-events:none}
+#journal{position:absolute;bottom:12vh;width:48ch;max-width:88vw;display:flex;flex-direction:column;gap:3rem}
+.entry{opacity:0;transform:translateY(16px);animation:surface 3s cubic-bezier(0.16,1,0.3,1) forwards;transition:opacity 8s,filter 12s,color 12s}
+.entry.aging{opacity:0.52;filter:blur(0.2px);color:var(--ink-mid)}
+.entry.ghost{opacity:0.18;filter:blur(0.5px);color:var(--ink-dim)}
+.entry.dissolved{opacity:0.05;filter:blur(1px);color:var(--ink-ghost)}
+@keyframes surface{0%{opacity:0;transform:translateY(16px);clip-path:inset(0 100% 0 0)}40%{opacity:1;transform:translateY(0)}100%{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}}
+.entry{animation:surface 4.2s cubic-bezier(0.16,1,0.3,1) forwards !important}
+.entry-timestamp{font-family:'Courier Prime',monospace;font-size:0.62rem;letter-spacing:0.5em;color:var(--ink-dim);margin-bottom:1.4rem;text-transform:uppercase;font-style:italic;text-align:center;text-shadow:0 0 8px rgba(0,0,0,0.6)}
+.entry-text{font-family:'Old Standard TT',serif;font-weight:400;font-size:1.22rem;line-height:1.8;letter-spacing:0.01em;color:inherit;text-align:justify;hyphens:auto;text-shadow:0 0 18px rgba(0,0,0,0.6)}
+.entry-text::first-letter{font-family:'Italiana',serif;font-weight:400;font-size:3rem;line-height:0.85;float:left;padding:0.3rem 0.6rem 0 0;color:var(--ink);text-shadow:0 0 12px rgba(0,0,0,0.7)}
+.entry.uncertain .entry-text{font-style:italic}
+.entry{position:relative}
+.entry+.entry{padding-top:1.8rem;border-top:none}
+.entry+.entry::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:60px;height:1px;background:linear-gradient(to right,transparent,var(--ink-dim) 50%,transparent)}
+.entry+.entry::after{content:"·";position:absolute;top:-0.65rem;left:50%;transform:translateX(-50%);color:var(--ink-mid);font-size:1.2rem;background:var(--bg);padding:0 0.4rem;line-height:1}
+#waiting{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:100;background:var(--bg);transition:opacity 2.4s}
+#waiting.hidden{opacity:0;pointer-events:none}
+#waiting p{font-family:'Italiana',serif;font-weight:400;font-style:normal;font-size:2.4rem;letter-spacing:0.06em;color:var(--ink-mid);text-align:center;max-width:20ch;line-height:1.3;text-transform:lowercase}
+#counter{position:fixed;top:1.8rem;left:2.2rem;font-family:'Courier Prime',monospace;font-size:0.56rem;letter-spacing:0.2em;color:var(--ink-ghost);text-transform:uppercase;z-index:20}
+#pulse{position:fixed;bottom:1.8rem;left:50%;transform:translateX(-50%);width:3px;height:3px;border-radius:50%;background:var(--ink-dim);opacity:0;z-index:20;transition:opacity 0.6s}
+#pulse.active{opacity:1;animation:throb 2.4s ease-in-out infinite}
+@keyframes throb{0%,100%{transform:translateX(-50%) scale(1);opacity:0.3}50%{transform:translateX(-50%) scale(2.4);opacity:0.8}}
+</style>
+</head>
+<body>
+<video id="ghost" autoplay playsinline muted></video>
+<div id="scan"></div>
+<div id="hatch"></div>
+<video id="camera" autoplay playsinline muted></video>
+<canvas id="canvas" width="320" height="240"></canvas>
+<canvas id="prev" width="320" height="240"></canvas>
+<div id="waiting"><p>the room is already<br>watching</p></div>
+<div id="counter">— <span id="count">0</span></div>
+<div id="pulse"></div>
+<div id="stage"><div id="journal"></div></div>
+<script>
+const OLLAMA='http://localhost:11434';
+const MODEL='llama3.2:3b';
+const INTERVAL=22000;
+const SYSTEM=`You are the memory of a room writing a journal of whoever sits before you.
+
+Rules you must never break:
+- Never use "you" or "your." Never address the viewer.
+- Never use first person. No "I."
+- Never name emotions. No "seems," "appears," "feels."
+- Never philosophize. No abstract statements about time, presence, existence, meaning.
+- Write in third person, present tense.
+- 2-3 short sentences. Plain language. Concrete details only.
+- Describe what is physically there: posture, stillness, light, duration.
+- Vary openings: "The figure," "Stillness," "A shoulder," "Light falls," "The hours pass," "Something shifts."
+- Tone: a detective's log, not a poem. Quiet, observational, slightly cold.
+- One entry. Do not explain. Do not reflect.`;
+let count=0,writing=false,entries=[],lastMotion=0,dwellStart=Date.now();
+const cam=document.getElementById('camera'),cv=document.getElementById('canvas'),pv=document.getElementById('prev'),ctx=cv.getContext('2d'),pctx=pv.getContext('2d'),j=document.getElementById('journal'),st=document.getElementById('stage'),wt=document.getElementById('waiting'),ce=document.getElementById('count'),pl=document.getElementById('pulse');
+async function start(){
+  try{
+    const s=await navigator.mediaDevices.getUserMedia({video:{width:320,height:240},audio:false});
+    cam.srcObject=s;
+    document.getElementById('ghost').srcObject=s;
+    await new Promise(r=>cam.onloadedmetadata=r);
+    wt.classList.add('hidden');setTimeout(()=>wt.style.display='none',2400);
+    setTimeout(run,3000);setInterval(run,INTERVAL);
+  }catch(e){wt.innerHTML='<p>camera access denied</p>';console.error(e);}
+}
+let motionHistory=[];
+function sense(){
+  ctx.drawImage(cam,0,0,320,240);
+  const cur=ctx.getImageData(0,0,320,240).data;
+  let motion=0,bright=0,topB=0,botB=0,leftB=0,rightB=0,topM=0,botM=0,centerB=0,edgeB=0;
+  let rSum=0,gSum=0,bSum=0,warmPx=0,coolPx=0;
+  const w=320,h=240;
+  try{
+    const prev=pctx.getImageData(0,0,w,h).data;
+    for(let y=0;y<h;y+=2){
+      for(let x=0;x<w;x+=2){
+        const i=(y*w+x)*4;
+        const r=cur[i],g=cur[i+1],b=cur[i+2];
+        const lum=(r+g+b)/3;
+        const dlum=Math.abs(r-prev[i]);
+        motion+=dlum;bright+=lum;
+        rSum+=r;gSum+=g;bSum+=b;
+        if(r>b+15)warmPx++;
+        if(b>r+15)coolPx++;
+        if(y<h/2){topB+=lum;topM+=dlum;}else{botB+=lum;botM+=dlum;}
+        if(x<w/2)leftB+=lum;else rightB+=lum;
+        const cx=Math.abs(x-w/2)/(w/2),cy=Math.abs(y-h/2)/(h/2);
+        if(cx<0.4&&cy<0.4)centerB+=lum;else edgeB+=lum;
+      }
+    }
+  }catch(e){}
+  pctx.drawImage(cam,0,0,w,h);
+  const samples=(w*h)/4;
+  const motionAvg=motion/samples;
+  const brightAvg=bright/samples;
+  const topBright=topB/(samples/2),botBright=botB/(samples/2);
+  const leftBright=leftB/(samples/2),rightBright=rightB/(samples/2);
+  const topMotion=topM/(samples/2),botMotion=botM/(samples/2);
+  const centerBright=centerB/(samples*0.16),edgeBright=edgeB/(samples*0.84);
+  const dwellSec=Math.floor((Date.now()-dwellStart)/1000);
+
+  // Track motion rhythm
+  motionHistory.push(motionAvg);
+  if(motionHistory.length>8)motionHistory.shift();
+  const motionVariance=motionHistory.length>2?
+    motionHistory.reduce((a,b)=>a+Math.abs(b-motionAvg),0)/motionHistory.length:0;
+
+  // === MOTION ===
+  let motionPhrase;
+  if(motionAvg<1.5)motionPhrase='held completely still, no perceptible movement';
+  else if(motionAvg<4)motionPhrase='almost motionless, only the faintest shifts';
+  else if(motionAvg<9)motionPhrase='still, with slow intermittent movement';
+  else if(motionAvg<18)motionPhrase='shifting in place, settling and resettling';
+  else if(motionAvg<35)motionPhrase='moving steadily, an ongoing restlessness';
+  else motionPhrase='moving freely, the frame disturbed throughout';
+
+  // === MOTION RHYTHM (new) ===
+  let rhythmPhrase='';
+  if(motionHistory.length>=4){
+    if(motionVariance<2&&motionAvg<4)rhythmPhrase='the stillness has held without break';
+    else if(motionVariance<2&&motionAvg>15)rhythmPhrase='the motion is constant, without rest';
+    else if(motionVariance>8)rhythmPhrase='the rhythm is broken, stillness alternating with movement';
+    else if(motionVariance>4)rhythmPhrase='the movement is uneven, irregular';
+  }
+
+  // === LIGHT QUALITY ===
+  let lightPhrase;
+  if(brightAvg<40)lightPhrase='very dim, almost dark';
+  else if(brightAvg<80)lightPhrase='low and uneven, much of the frame in shadow';
+  else if(brightAvg<130)lightPhrase='soft, indirect, the kind of light without source';
+  else if(brightAvg<180)lightPhrase='steady, ordinary, neither warm nor cold';
+  else lightPhrase='bright, with parts of the frame overexposed';
+
+  // === LIGHT DIRECTION ===
+  let lightSource='';
+  const lr=leftBright-rightBright,tb=topBright-botBright;
+  if(Math.abs(lr)>15)lightSource=lr>0?'falling from the left':'falling from the right';
+  else if(Math.abs(tb)>15)lightSource=tb>0?'falling from above':'falling from below';
+  else lightSource='evenly distributed';
+
+  // === COLOR TEMPERATURE (new) ===
+  let colorPhrase='';
+  const rAvg=rSum/samples,gAvg=gSum/samples,bAvg=bSum/samples;
+  const warmth=(warmPx-coolPx)/samples;
+  if(brightAvg>50){
+    if(warmth>0.15)colorPhrase='the air carries a warm cast, amber or sodium';
+    else if(warmth<-0.15)colorPhrase='the room reads cool, bluish in the shadows';
+    else if(Math.abs(rAvg-gAvg)<8&&Math.abs(gAvg-bAvg)<8)colorPhrase='the color has bled out, almost monochrome';
+    else colorPhrase='the color is neutral, neither warm nor cold';
+  }
+
+  // === FRAME COMPOSITION (new) ===
+  let compositionPhrase='';
+  if(brightAvg>30){
+    if(centerBright>edgeBright*1.4)compositionPhrase='the center of the frame is lit; the edges fall away into dark';
+    else if(edgeBright>centerBright*1.3)compositionPhrase='the edges are brighter than the center, the figure outlined against light';
+    else if(Math.abs(centerBright-edgeBright)<10)compositionPhrase='the light is even across the frame, without depth';
+  }
+
+  // === MOTION ZONE ===
+  let motionZone='';
+  if(motionAvg>3){
+    if(topMotion>botMotion*1.4)motionZone='in the upper half of the frame — head, shoulders';
+    else if(botMotion>topMotion*1.4)motionZone='in the lower half of the frame — hands, perhaps the chest';
+    else motionZone='distributed across the frame';
+  }
+
+  // === DURATION ===
+  let durationPhrase;
+  if(dwellSec<60)durationPhrase=`${dwellSec} seconds`;
+  else if(dwellSec<300)durationPhrase=`about ${Math.floor(dwellSec/60)} minute${dwellSec>=120?'s':''}`;
+  else if(dwellSec<1800)durationPhrase=`${Math.floor(dwellSec/60)} minutes, long enough to settle`;
+  else durationPhrase=`${Math.floor(dwellSec/60)} minutes, long past comfortable`;
+
+  return{motionPhrase,rhythmPhrase,lightPhrase,lightSource,colorPhrase,compositionPhrase,motionZone,durationPhrase};
+}
+async function write(s){
+  const nudge=(count>0&&count%4===0)?'\n\nMake this entry slightly uncertain — as if half-remembered. Slower, more tentative.':'';
+  const facts=[
+  '- motion: '+s.motionPhrase,
+  s.rhythmPhrase?'- rhythm: '+s.rhythmPhrase:'',
+  '- light: '+s.lightPhrase+', '+s.lightSource,
+  s.colorPhrase?'- color: '+s.colorPhrase:'',
+  s.compositionPhrase?'- composition: '+s.compositionPhrase:'',
+  s.motionZone?'- where movement appears: '+s.motionZone:'',
+  '- duration: '+s.durationPhrase
+].filter(Boolean).join('\n');
+const prompt=`FACTS (the only things true about this moment):
+${facts}
+
+Write 3 to 4 sentences. Up to 60 words.
+- Use ONLY the facts above.
+- Do not invent posture, clothing, expression, gaze, thought, or objects.
+- Atmospheric and literary language is welcome, but every detail must be tied to a fact above.
+- Third person, present tense.
+- Vary the opening.
+- No "you." No "I." No named emotions. No philosophy about time or meaning.${nudge}`;
+  const r=await fetch(OLLAMA+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:MODEL,messages:[{role:'system',content:SYSTEM},{role:'user',content:prompt}],stream:false,options:{temperature:0.62,num_predict:180}})});
+  if(!r.ok)throw new Error(r.status);
+  const d=await r.json();
+  return d.message?.content?.trim()||'';
+}
+function decay(){
+  const t=entries.length;
+  entries.forEach((el,i)=>{
+    const age=t-1-i;
+    el.classList.remove('aging','ghost','dissolved');
+    if(age>=9)el.classList.add('dissolved');
+    else if(age>=5)el.classList.add('ghost');
+    else if(age>=2)el.classList.add('aging');
+  });
+}
+function append(text){
+  count++;ce.textContent=count;
+  const ts=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
+  const unc=count>1&&count%4===0;
+  const el=document.createElement('div');
+  el.className='entry'+(unc?' uncertain':'');
+  el.innerHTML='<div class="entry-timestamp">'+ts+'</div><div class="entry-text">'+text.replace(/&/g,'&amp;').replace(/</g,'&lt;')+'</div>';
+  j.appendChild(el);entries.push(el);decay();
+  requestAnimationFrame(()=>{const sH=st.clientHeight,jH=j.scrollHeight;if(jH>sH-180){const off=jH-(sH-90);j.style.transform='translateY(-'+off+'px)';j.style.transition='transform 2.6s cubic-bezier(0.16,1,0.3,1)';}});
+}
+async function run(){
+  if(writing)return;
+  writing=true;pl.classList.add('active');
+  const ghost=document.getElementById('ghost');
+  ghost.classList.add('developing');
+  setTimeout(()=>ghost.classList.remove('developing'),3000);
+  const watchdog=setTimeout(()=>{writing=false;pl.classList.remove('active');console.warn('watchdog reset');},60000);
+  try{
+    const s=sense();
+    const t=await write(s);
+    if(t)append(t);
+  }catch(e){console.error('cycle error:',e);}
+  finally{clearTimeout(watchdog);writing=false;pl.classList.remove('active');}
+}
+start();
+</script>
+</body>
+</html>
