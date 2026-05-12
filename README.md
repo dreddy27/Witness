@@ -20,3 +20,10 @@ A browser-native artwork. A local language model watches whoever sits in front o
 - `index.html` — the full artwork
 - `SYSTEM_CHARTER.md` — creative charter, committed before first line of code
 - `release/` — artist statement, screen capture, session screenshots
+
+## Documentation
+Due to GitHub file size limits, the 60-second screen capture and session screenshots are hosted on Google Drive:
+**[View documentation folder](https://drive.google.com/drive/folders/1S5gMTA4V_JHzT-Ep-OYJxiwBJuqrlq6E?usp=sharing)**
+Contents:
+- `witness-demo.mov` — 60-second screen capture of the system running
+- `journal-frame-1.png` through `journal-frame-5.png` — still frames at various session stages
